@@ -2,7 +2,7 @@
 # For each file, perform "make" then call "/usr/bin/time -l -h -p ./sad mem_init.txt"
 
 # list of directories
-DIRS=("hw2_golden" "hw2_approximate_timed" "hw2_mixed")
+DIRS=("hw3_golden" "hw3_approximate_timed" "hw3_mixed")
 INPUT_FILE="mem_init.txt"
 
 echo "Starting Simulation ..."
