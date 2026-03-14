@@ -1,6 +1,6 @@
 How to build and run all three models:
-1. Ensure the folder for each model is placed in the same directory. 
-2. Ensure the systemC library (version 2.3.2) is placed in one directory above the folder for each model. 
+1. Ensure the folder for each model is placed in the same directory under HW3. 
+2. Ensure the systemC library (version 2.3.2) is placed at the same directory as ECSE541.
     - If the systemC folder name does not match systemc-2.3.2, then the file name must be explicitly changed in each Makefile. 
     - Or simply change the Systemc folder name to systemc-2.3.2
 3. cd into directory Assignment2
