@@ -3,8 +3,6 @@
 class bus : public sc_module, public bus_master_if, public bus_minion_if
 {
   public:
-    bus(sc_module_name);
-    
     // declaration of bus_master_if functions
      virtual void Request(unsigned int mst_id, unsigned int addr, unsigned int op, 
     unsigned int len); 
@@ -32,6 +30,8 @@ class bus : public sc_module, public bus_master_if, public bus_minion_if
     bool ack_pending = false; // to inform that ack is sent but not yet treated
     sc_event req_event; // to inform that req is valid
     sc_event ack_event; // to inform that ack is valid
+    bool read_pending = false; // to wait until data is here 
+    sc_event read_event; // to inform master that data is ready
     bool write_pending = false; // to stop minion from processing before data arrives
     sc_event write_event; // to inform that data is in the shared var
 };

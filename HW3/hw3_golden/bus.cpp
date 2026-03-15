@@ -24,7 +24,11 @@ bool bus::WaitForAcknowledge(unsigned int mst_id){
 void bus::ReadData(unsigned int &data){
     // the value is stored in read_data - shared var by master and minion
     // it then gets stored in the variable requested
+    while (!read_pending){
+        wait(read_event);
+    }
     data = read_data;
+    read_pending = false;
     return;
 }
 
@@ -62,6 +66,8 @@ void bus::SendReadData(unsigned int data){
     // this data represents the data from memory location
     // we store it in read_data so it can be accessed by master bus as well
     read_data = data;
+    read_pending = true;
+    read_event.notify();
     return;
 }
 
