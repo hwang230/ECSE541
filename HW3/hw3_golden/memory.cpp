@@ -1,10 +1,39 @@
 #include "memory.h"
 
+
+// execute function takes care of handshake with master
+void memory::execute(){
+    // should continuously receive request
+    while (true){ 
+        unsigned int req_addr, req_op, req_len;
+        bus_port->Listen(req_addr, req_op, req_len);
+        // assume 0 for read and 1 for write
+        if (req_op == 0){
+            // read case
+            unsigned int data; // what happens on burst transfer?
+            for (int i = 0; i < req_len; i++){
+                memory::Read(req_addr + i, data);
+                bus_port->SendReadData(data);
+            }
+            bus_port->Acknowledge();
+
+        } else if (req_op == 1){
+            // write case
+            unsigned int data;
+            for (int i = 0; i < req_len; i++){
+                bus_port->ReceiveWriteData(data);
+                memory::Write(req_addr + i, data);
+            }
+            bus_port->Acknowledge();
+        }
+    }
+    return;
+}
+
 // constructor implementation
 memory::memory(sc_module_name name, std::string memfile): sc_module(name){
     // initialize memory using helper function
     memoryInit(memfile);
-
 }
 
 // read function
@@ -79,3 +108,4 @@ void memory::memoryInit(std::string memfile) {
 bool memory::isMemoryValid(unsigned int addr){
     return addr < MEM_SIZE;
 }
+

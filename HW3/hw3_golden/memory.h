@@ -4,6 +4,7 @@
 #include "systemc.h"
 #include "system.h"
 #include "simple_mem_if.h"
+#include "bus.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -12,6 +13,8 @@
 
 class memory: public sc_module, public simple_mem_if { 
 public: 
+    // to connect to minion interface
+    sc_port<bus_minion_if> bus_port;
     // constructor 
     memory(sc_module_name name, std::string memfile); 
   
@@ -21,7 +24,8 @@ public:
     
     // helper function
     void memoryPrint(unsigned int start, unsigned int end);
-  
+    void execute(); 
+
 private: 
     // array used for storing data 
     unsigned int mem[MEM_SIZE]; 
