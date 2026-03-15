@@ -4,7 +4,6 @@
 
 #include "system.h"
 #include "memory.h"
-#include "sad.h"
 
 using namespace std;
 
@@ -50,7 +49,7 @@ int sc_main(int argc, char* argv[]) {
 
     /* start of functional SAD implementation */
     memory *myMem;
-    sad *soSad;
+    //sad *soSad;
 
     if (argc == 1){
         cout << "Usage: ./sad <memfile>" << endl;
@@ -59,8 +58,8 @@ int sc_main(int argc, char* argv[]) {
         myMem = new memory("myMem", string(argv[1]));
     }
 
-    soSad = new sad("soSad");
-    soSad->memIf(*myMem);
+    //soSad = new sad("soSad");
+    //soSad->memIf(*myMem);
 
     cout << "Initial memory state:" << endl;
     myMem->memoryPrint(outputAddr, outputAddr+NUM_BLOCKS);
