@@ -26,3 +26,4 @@ class bus_minion_if : virtual public sc_interface
 };
 
 #endif
+
