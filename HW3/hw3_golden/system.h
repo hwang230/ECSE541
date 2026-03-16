@@ -11,10 +11,10 @@
 #define MEMORY_SIZE (1 << (10+6))
 
 // new variable for HW3
-#define addrC
-#define addrA
-#define addrB
-#define SIZE 6
-#define LOOPS 1000
+#define addrC 1000
+#define addrA 1200
+#define addrB 1400
+#define SIZE 2
+#define LOOPS 1
 
 #endif
