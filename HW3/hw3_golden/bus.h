@@ -9,7 +9,6 @@ class bus : public sc_module, public bus_master_if, public bus_minion_if
     virtual bool WaitForAcknowledge(unsigned int mst_id); 
     virtual void ReadData(unsigned int &data); 
     virtual void WriteData(unsigned int data); 
-
     // declaration of bus_minion_if functions
     virtual void Listen(unsigned int &req_addr, unsigned int &req_op, unsigned int 
     &req_len); 
@@ -34,4 +33,5 @@ class bus : public sc_module, public bus_master_if, public bus_minion_if
     sc_event read_event; // to inform master that data is ready
     bool write_pending = false; // to stop minion from processing before data arrives
     sc_event write_event; // to inform that data is in the shared var
+    sc_event read_receive_event; // to ensure master has consumed before minion fetches new word
 };

@@ -4,6 +4,7 @@
 // bus master functions
 void bus::Request(unsigned int mst_id, unsigned int addr, unsigned int op, 
 unsigned int len){
+    // set shared variables values and trigger minions
     r_mst_id = mst_id;
     r_addr = addr;
     r_op = op;
@@ -29,6 +30,7 @@ void bus::ReadData(unsigned int &data){
     }
     data = read_data;
     read_pending = false;
+    read_receive_event.notify();
     return;
 }
 
@@ -44,9 +46,8 @@ void bus::WriteData(unsigned int data){
 // bus minion functions
 void bus::Listen(unsigned int &req_addr, unsigned int &req_op, unsigned int 
 &req_len){
-    while (!req_pending){
-        wait(req_event);
-    }
+    // minion should standby until request is sent by master
+    while (!req_pending) wait(req_event);
     // then use these stored variables to perform the operation 
     // requested by master
     req_pending = false;
@@ -65,6 +66,7 @@ void bus::Acknowledge(){
 void bus::SendReadData(unsigned int data){   
     // this data represents the data from memory location
     // we store it in read_data so it can be accessed by master bus as well
+    while (read_pending) wait(read_receive_event);
     read_data = data;
     read_pending = true;
     read_event.notify();
