@@ -10,5 +10,11 @@
 #define SAD_OUTPUT_ADDR 32768
 #define MEMORY_SIZE (1 << (10+6))
 
+// new variable for HW3
+#define addrC
+#define addrA
+#define addrB
+#define SIZE 6
+#define LOOPS 1000
 
 #endif

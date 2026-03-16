@@ -9,7 +9,8 @@ using namespace std;
 
 
 unsigned int input1Addr, input2Addr, outputAddr;
-
+unsigned int inputA, inputB, inputC;
+unsigned int size, loops;
 int sc_main(int argc, char* argv[]) {
     // initialize values for input and output addresses
     input1Addr = INPUT1_ADDR;
