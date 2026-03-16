@@ -9,7 +9,7 @@ OBJS=system.o memory.o matmul.o bus.o
 %.o: %.cpp $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS) $(IFLAGS)
 
-sad: $(OBJS)
+matmul: $(OBJS)
 	$(CC) -o $@ $^ $(CFLAGS) $(LFLAGS)
 
 .PHONY: clean

@@ -4,7 +4,8 @@ class bus : public sc_module, public bus_master_if, public bus_minion_if
 {
   public:
     // declaration of bus_master_if functions
-     virtual void Request(unsigned int mst_id, unsigned int addr, unsigned int op, 
+    bus(sc_module_name name);
+    virtual void Request(unsigned int mst_id, unsigned int addr, unsigned int op, 
     unsigned int len); 
     virtual bool WaitForAcknowledge(unsigned int mst_id); 
     virtual void ReadData(unsigned int &data); 

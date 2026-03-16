@@ -1,6 +1,7 @@
 #include "bus.h"
 
-
+bus::bus(sc_module_name name): sc_module(name){
+}
 // bus master functions
 void bus::Request(unsigned int mst_id, unsigned int addr, unsigned int op, 
 unsigned int len){
