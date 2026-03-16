@@ -18,7 +18,7 @@ void matmul::do_MATMUL(){
             for(j=0; j<SIZE; j++){ // Total Cycles: 520000, Execs: 5000, Iters: 5
                 // replace this with bus functions
                 //addrC[n][i][j] = 0;
-                r_addr = addrC + n*SIZE*SIZE + i*SIZE +j;
+                r_addr = addrC  + i*SIZE +j;
                 busMaster->Request(0, r_addr, 1, 1);
                 busMaster->WriteData(0);
                 busMaster->WaitForAcknowledge(0);
@@ -30,9 +30,9 @@ void matmul::do_MATMUL(){
                     // replace this with bus functions
                     //addrC[n][i][j] += addrA[n][i][k] * addrB[n][k][j];
                     // addresses calculation
-                    r_addrC = addrC + n*SIZE*SIZE + i*SIZE + j;
-                    r_addrA = addrA + n*SIZE*SIZE + i*SIZE + k;
-                    r_addrB = addrB + n*SIZE*SIZE + k*SIZE + j;
+                    r_addrC = addrC  + i*SIZE + j;
+                    r_addrA = addrA  + i*SIZE + k;
+                    r_addrB = addrB  + k*SIZE + j;
 
                     // retrieve value at A
                     busMaster->Request(0, r_addrA, 0, 1);
