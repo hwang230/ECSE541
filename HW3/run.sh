@@ -25,7 +25,7 @@ for dir in "${DIRS[@]}"; do
             echo "----------------------------------------"
             
             # run the model 
-            /usr/bin/time -l -h -p ./sad "$INPUT_FILE"
+            /usr/bin/time -l -h -p ./matmul "$INPUT_FILE"
             
             echo "----------------------------------------"
             echo "----------------------------------------"
