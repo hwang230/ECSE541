@@ -1,5 +1,11 @@
 #include "memory.h"
 
+// constructor implementation
+memory::memory(sc_module_name name, std::string memfile): sc_module(name){
+    // initialize memory using helper function
+    memoryInit(memfile);
+    SC_THREAD(execute);
+}
 
 // execute function takes care of handshake with master
 void memory::execute(){
@@ -14,9 +20,13 @@ void memory::execute(){
             for (int i = 0; i < req_len; i++){
                 memory::Read(req_addr + i, data);
                 bus_port->SendReadData(data);
+                // should wait here to make sure that master has already
+                // consumed before proceeding with next word
+                // Note: This handshaking is implemented in bus.cpp
+                // Depending on requirements, we can also use buffer queue to store read data
             }
+            // only acknowledge once transfer is done
             bus_port->Acknowledge();
-
         } else if (req_op == 1){
             // write case
             unsigned int data;
@@ -28,12 +38,6 @@ void memory::execute(){
         }
     }
     return;
-}
-
-// constructor implementation
-memory::memory(sc_module_name name, std::string memfile): sc_module(name){
-    // initialize memory using helper function
-    memoryInit(memfile);
 }
 
 // read function
