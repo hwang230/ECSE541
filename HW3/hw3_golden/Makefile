@@ -15,4 +15,4 @@ matmul: $(OBJS)
 .PHONY: clean
 
 clean:
-	rm -f $(OBJS) sad
+	rm -f $(OBJS) matmul
