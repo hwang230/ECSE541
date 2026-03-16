@@ -8,7 +8,7 @@
 class matmul: public sc_module{
 public:
     // interface with minion as bus master
-    sc_port<bus_master_if> busMasterIf;
+    sc_port<bus_master_if> busMaster;
     
     SC_HAS_PROCESS(matmul);
 
