@@ -8,15 +8,11 @@
 using namespace std;
 
 
-unsigned int input1Addr, input2Addr, outputAddr;
 unsigned int inputA, inputB, inputC;
 unsigned int matSize, loops;
 
 int sc_main(int argc, char* argv[]) {
     // initialize values for input and output addresses
-    input1Addr = INPUT1_ADDR;
-    input2Addr = INPUT2_ADDR;
-    outputAddr = SAD_OUTPUT_ADDR;
     inputA = addrA;
     inputB = addrB;
     inputC = addrC;
@@ -24,33 +20,34 @@ int sc_main(int argc, char* argv[]) {
     loops = LOOPS;
 
     // next, check usage
-    if (argc != 2 && argc != 4 && argc !=5) {
-        cerr << "Usage: " << argv[0] << " <filename> [intput1Addr input2Addr [outputAddr]]" << endl;
+    if (argc != 2 && argc != 6 && argc !=7) {
+        cerr << "Usage: " << argv[0] << " <filename> [[[addrC addrA addrB] size] loops]" << endl;
         return 0;
     } // if
 
     // set custom addresses
-    if (argc >= 4) {
-        input1Addr = stoi(argv[2]);
-        input2Addr = stoi(argv[3]);
-
-        if (argc > 4)
-            outputAddr = stoi(argv[4]);
+    if (argc >= 6) {
+        inputC = stoi(argv[2]);
+        inputA = stoi(argv[3]);
+        inputB = stoi(argv[4]);
+        matSize = stoi(argv[5]);
+        if (argc > 6)
+            loops = stoi(argv[6]);
     } // if
 
     // check addresses against memory size
-    if (input1Addr + NUM_BLOCKS*BLOCK_SIZE > MEMORY_SIZE) {
-        cerr << "*** ERROR in main: input1Addr invalid" << endl;
+    if (inputC + matSize*matSize > MEMORY_SIZE) {
+        cerr << "*** ERROR in main: inputC invalid" << endl;
         return 0;
     } // if
 
-    if (input2Addr + NUM_BLOCKS*BLOCK_SIZE > MEMORY_SIZE) {
-        cerr << "*** ERROR in main: input2Addr invalid" << endl;
+    if (inputA + matSize*matSize > MEMORY_SIZE) {
+        cerr << "*** ERROR in main: inputA invalid" << endl;
         return 0;
     } // if
 
-    if (outputAddr + NUM_BLOCKS > MEMORY_SIZE) {
-        cerr << "*** ERROR in main: outputAddr invalid" << endl;
+    if (inputB + matSize*matSize > MEMORY_SIZE) {
+        cerr << "*** ERROR in main: inputB invalid" << endl;
         return 0;
     }
 
@@ -59,8 +56,9 @@ int sc_main(int argc, char* argv[]) {
     matmul *myMatmul;
     bus *myBus;
 
+    // this command should be ran with more than 2 args
     if (argc == 1){
-        cout << "Usage: ./sad <memfile>" << endl;
+        cout << "Usage: ./matmul <memfile>" << endl;
         return 1;
     } else{
         myMem = new memory("myMem", string(argv[1]));
@@ -90,7 +88,7 @@ int sc_main(int argc, char* argv[]) {
     cout << "Simulated for " << (stopTime - startTime) << endl;
 
     // print the output values after they are modified
-    cout << "Final memory state:" << endl;
+    cout << "Final memory state for Matrix C:" << endl;
     myMem->memoryPrint(inputC, inputC + matSize*matSize);
 
     return 0;
