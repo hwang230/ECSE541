@@ -3,7 +3,7 @@
 
 # list of directories
 # DIRS=("hw3_golden" "hw3_approximate_timed" "hw3_mixed")
-DIRS=("hw3_golden")
+DIRS=("hw3_golden" "hw3_sw "hw3_swhw)
 INPUT_FILE="mem_init.txt"
 
 echo "Starting Simulation ..."
