@@ -36,17 +36,17 @@ int sc_main(int argc, char* argv[]) {
     } // if
 
     // check addresses against memory size
-    if (inputC + matSize*matSize > MEMORY_SIZE) {
+    if (inputC + matSize*matSize > MEMORY_BOUND) {
         cerr << "*** ERROR in main: inputC invalid" << endl;
         return 0;
     } // if
 
-    if (inputA + matSize*matSize > MEMORY_SIZE) {
+    if (inputA + matSize*matSize > MEMORY_BOUND) {
         cerr << "*** ERROR in main: inputA invalid" << endl;
         return 0;
     } // if
 
-    if (inputB + matSize*matSize > MEMORY_SIZE) {
+    if (inputB + matSize*matSize > MEMORY_BOUND) {
         cerr << "*** ERROR in main: inputB invalid" << endl;
         return 0;
     }
