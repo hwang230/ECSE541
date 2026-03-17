@@ -35,19 +35,33 @@ int sc_main(int argc, char* argv[]) {
             loops = stoi(argv[6]);
     } // if
 
+    unsigned int inputC_end = inputC + matSize*matSize;
+    unsigned int inputA_end = inputA + matSize*matSize;
+    unsigned int inputB_end = inputB + matSize*matSize;
     // check addresses against memory size
-    if (inputC + matSize*matSize > MEMORY_BOUND) {
+    if (inputC_end > MEMORY_BOUND) {
         cerr << "*** ERROR in main: inputC invalid" << endl;
         return 0;
     } // if
 
-    if (inputA + matSize*matSize > MEMORY_BOUND) {
+    if (inputA_end > MEMORY_BOUND) {
         cerr << "*** ERROR in main: inputA invalid" << endl;
         return 0;
     } // if
 
-    if (inputB + matSize*matSize > MEMORY_BOUND) {
+    if (inputB_end > MEMORY_BOUND) {
         cerr << "*** ERROR in main: inputB invalid" << endl;
+        return 0;
+    }
+
+    // check overlapping of matrixA and matrixB to matrixC
+    if (inputC <= inputA_end && inputA <= inputC_end){
+        cerr << "*** ERROR: Matrix A overlaps with Matrix C" << endl;
+        return 0;
+    }
+
+    if (inputC <= inputB_end && inputB <= inputC_end){
+        cerr << "*** ERROR: Matrix B overlaps with Matrix C" << endl;
         return 0;
     }
 
