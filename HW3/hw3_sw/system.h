@@ -10,6 +10,6 @@
 #define addrA 300
 #define addrB 600
 #define SIZE 2
-#define LOOPS 1
+#define LOOPS 1000
 
 #endif

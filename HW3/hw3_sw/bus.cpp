@@ -1,11 +1,14 @@
 #include "bus.h"
 
+double cycle_time = 6.67; // in ns
 bus::bus(sc_module_name name): sc_module(name){
 }
 // bus master functions
 void bus::Request(unsigned int mst_id, unsigned int addr, unsigned int op, 
 unsigned int len){
     // set shared variables values and trigger minions
+    // Should wait at least two clock cycles
+    wait(2*cycle_time, SC_NS);
     r_mst_id = mst_id;
     r_addr = addr;
     r_op = op;
@@ -29,6 +32,8 @@ void bus::ReadData(unsigned int &data){
     while (!read_pending){
         wait(read_event);
     }
+    // requires two cycles
+    wait(2*cycle_time, SC_NS);
     data = read_data;
     read_pending = false;
     read_receive_event.notify();
@@ -38,6 +43,8 @@ void bus::ReadData(unsigned int &data){
 void bus::WriteData(unsigned int data){
     // put the data to be written to in shared var write_data
     // so minion can also have access to it
+    // requires one cycle
+    wait(cycle_time, SC_NS);
     write_data = data;
     write_pending = true;
     write_event.notify();
@@ -59,6 +66,8 @@ void bus::Listen(unsigned int &req_addr, unsigned int &req_op, unsigned int
 }
 
 void bus::Acknowledge(){
+    // require one cycle
+    wait(cycle_time, SC_NS);
     ack_pending = true; // set ack_pending to true so it does not wait in loop
     ack_event.notify(); // similar to mutex - inform the ack_event to get out
     return;
