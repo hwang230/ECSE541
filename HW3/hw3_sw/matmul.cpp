@@ -2,6 +2,7 @@
 
 extern unsigned int inputA, inputB, inputC;
 extern unsigned int matSize, loops;
+extern double cycle_time;
 
 // constructor
 matmul::matmul(sc_module_name name): sc_module(name){
@@ -17,7 +18,9 @@ void matmul::do_MATMUL(){
     unsigned int result;
     for (n=0; n<loops; n++) // Total Cycles: 8186006, Execs: 1, Iters: 1000
     {
+        wait(2*cycle_time, SC_NS); // account for loop addition and condition check
         for(i=0; i<matSize; i++){ // Total Cycles: 579000, Execs: 1000, Iters: 5
+            wait(2*cycle_time, SC_NS); // account for loop addition and condition check
             for(j=0; j<matSize; j++){ // Total Cycles: 520000, Execs: 5000, Iters: 5
                 // replace this with bus functions
                 //addrC[n][i][j] = 0;
@@ -25,10 +28,13 @@ void matmul::do_MATMUL(){
                 busMaster->Request(0, r_addr, 1, 1);
                 busMaster->WriteData(0);
                 busMaster->WaitForAcknowledge(0);
+                wait(2*cycle_time, SC_NS); // account for loop addition and condition check
             }
         }
         for(i=0; i<matSize; i++){ // Total Cycles: 7579000, Execs: 1000, Iters: 5
+            wait(2*cycle_time, SC_NS); // account for loop addition and condition check
             for(j=0; j<matSize; j++){ // Total Cycles: 7520000, Execs: 5000, Iters: 5
+                wait(2*cycle_time, SC_NS); // account for loop addition and condition check
                 for(k=0; k<matSize; k++){ // Total Cycles: 7225000, Execs: 25000, Iters: 5
                     // replace this with bus functions
                     //addrC[n][i][j] += addrA[n][i][k] * addrB[n][k][j];
@@ -56,6 +62,10 @@ void matmul::do_MATMUL(){
                     busMaster->Request(0, r_addrC, 1, 1);
                     busMaster->WriteData(result);
                     busMaster->WaitForAcknowledge(0);
+                    
+                    // account for the CPU addresss computation 
+                    wait(11*cycle_time, SC_NS); // 9 cycles for 3 addr cal and 2 for result
+                    wait(2*cycle_time, SC_NS); // loop condition check and addition
                 }
             }
         }

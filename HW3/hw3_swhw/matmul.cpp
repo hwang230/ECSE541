@@ -46,7 +46,7 @@ void matmul::do_MATMUL(){
                 // 'k' loop cycles = 7,225,000
                 // Overhead = (7,520,000 - 7,225,000) = 295,000 cycles
                 // Cycles/iteration = 295,000/5,000 executions = 59 cycles
-                wait(59 * sw_cycle_time, SC_NS);
+                // wait(59 * sw_cycle_time, SC_NS);
 
                 // addrC[n][i][j] += addrA[n][i][k] * addrB[n][k][j];
                 r_addrC = inputC + i*matSize +j;

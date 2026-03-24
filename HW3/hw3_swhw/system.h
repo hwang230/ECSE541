@@ -9,7 +9,7 @@
 #define addrC 1024
 #define addrA 2048
 #define addrB 3072
-#define SIZE 2
+#define SIZE 3
 #define LOOPS 1000
 
 #endif
