@@ -84,5 +84,7 @@ void matmul::do_MATMUL(){
 
             }
         }
+
     }
+    sc_stop();
 }

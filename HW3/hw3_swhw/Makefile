@@ -1,8 +1,8 @@
 SYSTEMC = ../../../systemc-2.3.2
 CC=g++
-CFLAGS=-g3 -std=c++11
-IFLAGS=-isystem $(SYSTEMC)/include
-LFLAGS=-L$(SYSTEMC)/lib-macosx64 -lsystemc -lm
+CFLAGS=-g3 -std=c++14
+IFLAGS=-isystem $(SYSTEMC)/src
+LFLAGS=-lsystemc -lm -L$(SYSTEMC)/lib-macosx64
 DEPS=system.h memory.h simple_mem_if.h matmul.h bus_if.h bus.h hw.h
 OBJS=system.o memory.o matmul.o bus.o hw.o
 
