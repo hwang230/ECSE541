@@ -13,6 +13,9 @@ void memory::execute(){
     while (true){ 
         unsigned int req_addr, req_op, req_len;
         bus_port->Listen(req_addr, req_op, req_len);
+
+        if(req_addr < 1024) continue; // ensure addresses for hw
+
         // assume 0 for read and 1 for write
         if (req_op == 0){
             // read case

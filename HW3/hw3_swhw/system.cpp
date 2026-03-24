@@ -5,6 +5,7 @@
 #include "system.h"
 #include "memory.h"
 #include "matmul.h"
+#include "hw.h"
 using namespace std;
 
 
@@ -69,6 +70,7 @@ int sc_main(int argc, char* argv[]) {
     memory *myMem;
     matmul *myMatmul;
     bus *myBus;
+    hw *myHw;
 
     // this command should be ran with more than 2 args
     if (argc == 1){
@@ -79,10 +81,13 @@ int sc_main(int argc, char* argv[]) {
     }
     myMatmul = new matmul("myMatmul");
     myBus = new bus("myBus");
+    myHw = new hw("myHw");
 
     // connect the modules together
     myMatmul->busMaster(*myBus);
     myMem->bus_port(*myBus);
+    myHw->busMaster(*myBus);
+    myHw->busMinion(*myBus);
 
     cout << "Initial memory state:" << endl;
     cout << "Matrix A state:" << endl;

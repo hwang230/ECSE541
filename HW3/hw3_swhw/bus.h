@@ -4,7 +4,9 @@ class bus : public sc_module, public bus_master_if, public bus_minion_if
 {
   public:
     // declaration of bus_master_if functions
+    SC_HAS_PROCESS(bus);
     bus(sc_module_name name);
+
     virtual void Request(unsigned int mst_id, unsigned int addr, unsigned int op, 
     unsigned int len); 
     virtual bool WaitForAcknowledge(unsigned int mst_id); 
@@ -33,6 +35,8 @@ class bus : public sc_module, public bus_master_if, public bus_minion_if
     bool read_pending = false; // to wait until data is here 
     sc_event read_event; // to inform master that data is ready
     bool write_pending = false; // to stop minion from processing before data arrives
+    bool bus_busy;
+    sc_event bus_free_event;
     sc_event write_event; // to inform that data is in the shared var
     sc_event read_receive_event; // to ensure master has consumed before minion fetches new word
 };
