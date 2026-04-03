@@ -113,7 +113,16 @@ def plot_pareto(
 
     # Foreground: Pareto points with utilization/area encoding.
     sc = ax.scatter(
-        p_lat, p_energy, c=p_util, s=sizes, cmap="viridis", alpha=0.95, edgecolors="black", label="Pareto points"
+        p_lat,
+        p_energy,
+        c=p_util,
+        s=sizes,
+        cmap="viridis",
+        vmin=0.0,
+        vmax=100.0,
+        alpha=0.95,
+        edgecolors="black",
+        label="Pareto points",
     )
     cbar = fig.colorbar(sc, ax=ax)
     cbar.set_label("Utilization (%)")
