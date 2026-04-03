@@ -1,0 +1,33 @@
+# Matmul-focused DSE that better stresses larger PE arrays.
+clock_seconds: 1e-9
+timeout_seconds: 180
+keep_failed_runs: true
+
+arch_template: templates/systolic_array_arch.template.yaml
+problem: problem_example.yaml
+mapping: mapping_example.yaml
+out_dir: ../results/dse_runs_medium_matmul
+
+constants:
+  # Use a real technology node; -1 forces dummy placeholder estimations.
+  technology: 22nm
+  datawidth: 8
+  global_cycle_seconds: 1e-9
+  # Larger GEMM so 32x32 and 64x64 arrays have enough work.
+  problem_m: 512
+  problem_n: 512
+  problem_k: 256
+  # Keep a chunk of K in local buffer for reuse.
+  k_tile: 16
+
+fixed:
+  # Keep local-buffer settings fixed for this study.
+  local_buffer_depth: 256
+  local_buffer_bw: 64
+
+sweep:
+  pe_dim: [8, 16, 32, 64]
+  # Keep this large for the current mapping, otherwise BackingStorage overflows.
+  global_buffer_depth: [2097152, 4194304]
+  # 4-point BW sweep with doubled max bandwidth.
+  backing_storage_bw: [32, 64, 128, 256]

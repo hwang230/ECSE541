@@ -1,0 +1,19 @@
+problem:
+  version: 0.4
+  shape:
+    name: "dot-product-ABZ"
+    dimensions: [K, M]
+    data_spaces:
+      - name: Weights
+        projection:
+          - [[K]]
+      - name: Inputs
+        projection:
+          - [[K]]
+      - name: Outputs
+        projection:
+          - [[M]]
+        read_write: True
+  instance:
+    M: 1
+    K: 16

@@ -1,0 +1,30 @@
+# Matmul-focused light workload using the same sweep parameters as medium.
+clock_seconds: 1e-9
+timeout_seconds: 180
+keep_failed_runs: true
+
+arch_template: templates/systolic_array_arch.template.yaml
+problem: problem_example.yaml
+mapping: mapping_example.yaml
+out_dir: ../results/dse_runs_light_matmul
+
+constants:
+  # Use a real technology node; -1 forces dummy placeholder estimations.
+  technology: 22nm
+  datawidth: 8
+  global_cycle_seconds: 1e-9
+  # Light GEMM workload.
+  problem_m: 64
+  problem_n: 64
+  problem_k: 16
+  # Keep K fully local for this small workload.
+  k_tile: 16
+
+fixed:
+  local_buffer_depth: 256
+  local_buffer_bw: 64
+
+sweep:
+  pe_dim: [8, 16, 32, 64]
+  global_buffer_depth: [2097152, 4194304]
+  backing_storage_bw: [32, 64, 128, 256]

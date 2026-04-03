@@ -1,0 +1,47 @@
+architecture:
+  version: 0.4
+  subtree:
+    - name: system
+      required_actions: [read, write, update, leak]
+      attributes:
+        technology: {{TECHNOLOGY}}
+        global_cycle_seconds: {{GLOBAL_CYCLE_SECONDS}}
+      local:
+        - name: BackingStorage
+          class: storage
+          subclass: SRAM
+          required_actions: [read, write, update, leak]
+          attributes:
+            technology: {{TECHNOLOGY}}
+            global_cycle_seconds: {{GLOBAL_CYCLE_SECONDS}}
+            depth: {{GLOBAL_BUFFER_DEPTH}}
+            width: 32
+            datawidth: {{DATAWIDTH}}
+            block_size: 4
+            read_bandwidth: {{BACKING_STORAGE_BW}}
+            write_bandwidth: {{BACKING_STORAGE_BW}}
+      subtree:
+        - name: PE
+          local:
+            - name: Buffer
+              class: storage
+              subclass: regfile
+              required_actions: [read, write, update, leak]
+              attributes:
+                technology: {{TECHNOLOGY}}
+                global_cycle_seconds: {{GLOBAL_CYCLE_SECONDS}}
+                instances: {{PE_COUNT}}
+                depth: {{LOCAL_BUFFER_DEPTH}}
+                width: {{DATAWIDTH}}
+                datawidth: {{DATAWIDTH}}
+                block_size: 1
+                read_bandwidth: {{LOCAL_BUFFER_BW}}
+                write_bandwidth: {{LOCAL_BUFFER_BW}}
+            - name: MACC
+              class: intmac
+              required_actions: [read, write, update, leak]
+              attributes:
+                global_cycle_seconds: {{GLOBAL_CYCLE_SECONDS}}
+                technology: {{TECHNOLOGY}}
+                instances: {{PE_COUNT}}
+                datawidth: {{DATAWIDTH}}
