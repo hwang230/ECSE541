@@ -2,40 +2,38 @@ from __future__ import annotations
 
 import csv
 import subprocess
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Sequence
 
-
-@dataclass
-class ScaleSimResult:
-    cmd: list[str]
-    returncode: int
-    stdout: str
-    stderr: str
-    metrics: dict[str, Any]
-    report_dir: Path
-
-
-def _project_root() -> Path:
-    return Path(__file__).resolve().parents[2]
-
-
-def _local_scalesim_python() -> Path:
-    return _project_root() / "timeloop-python" / "venv" / "bin" / "python"
-
+_LOCAL_SCALESIM_PYTHON = Path(__file__).resolve().parents[2] / "timeloop-python" / "venv" / "bin" / "python"
+_SCALESIM_REPORT_COLUMNS = {
+    "total_cycles_incl_prefetch": ("compute", " Total Cycles (incl. prefetch)"),
+    "total_cycles": ("compute", " Total Cycles"),
+    "stall_cycles": ("compute", " Stall Cycles"),
+    "overall_utilization_percent": ("compute", " Overall Util %"),
+    "mapping_efficiency_percent": ("compute", " Mapping Efficiency %"),
+    "compute_utilization_percent": ("compute", " Compute Util %"),
+    "avg_ifmap_sram_bw": ("bandwidth", " Avg IFMAP SRAM BW"),
+    "avg_filter_sram_bw": ("bandwidth", " Avg FILTER SRAM BW"),
+    "avg_ofmap_sram_bw": ("bandwidth", " Avg OFMAP SRAM BW"),
+    "avg_ifmap_dram_bw": ("bandwidth", " Avg IFMAP DRAM BW"),
+    "avg_filter_dram_bw": ("bandwidth", " Avg FILTER DRAM BW"),
+    "avg_ofmap_dram_bw": ("bandwidth", " Avg OFMAP DRAM BW"),
+    "dram_ifmap_reads": ("access", " DRAM IFMAP Reads"),
+    "dram_filter_reads": ("access", " DRAM Filter Reads"),
+    "dram_ofmap_writes": ("access", " DRAM OFMAP Writes"),
+}
 
 def require_scalesim_python() -> str:
-    local_python = _local_scalesim_python()
-    if local_python.exists():
-        return str(local_python)
+    if _LOCAL_SCALESIM_PYTHON.exists():
+        return str(_LOCAL_SCALESIM_PYTHON)
 
     hint = (
         "Scale-Sim was not found.\n"
         "Expected local interpreter:\n"
-        f"  {local_python}\n"
+        f"  {_LOCAL_SCALESIM_PYTHON}\n"
         "Install it into the local venv, for example:\n"
-        f"  {local_python} -m pip install scalesim"
+        f"  {_LOCAL_SCALESIM_PYTHON} -m pip install scalesim"
     )
     raise RuntimeError(hint)
 
@@ -139,28 +137,16 @@ def _to_float(value: Any) -> float | None:
 
 def load_scalesim_reports(report_dir: str | Path, *, clock_seconds: float | None = None) -> dict[str, Any]:
     report_dir = Path(report_dir)
-    compute = _read_single_row_csv(report_dir / "COMPUTE_REPORT.csv")
-    bandwidth = _read_single_row_csv(report_dir / "BANDWIDTH_REPORT.csv")
-    access = _read_single_row_csv(report_dir / "DETAILED_ACCESS_REPORT.csv")
-
-    metrics: dict[str, Any] = {
-        "total_cycles_incl_prefetch": _to_float(compute.get(" Total Cycles (incl. prefetch)")),
-        "total_cycles": _to_float(compute.get(" Total Cycles")),
-        "stall_cycles": _to_float(compute.get(" Stall Cycles")),
-        "overall_utilization_percent": _to_float(compute.get(" Overall Util %")),
-        "mapping_efficiency_percent": _to_float(compute.get(" Mapping Efficiency %")),
-        "compute_utilization_percent": _to_float(compute.get(" Compute Util %")),
-        "avg_ifmap_sram_bw": _to_float(bandwidth.get(" Avg IFMAP SRAM BW")),
-        "avg_filter_sram_bw": _to_float(bandwidth.get(" Avg FILTER SRAM BW")),
-        "avg_ofmap_sram_bw": _to_float(bandwidth.get(" Avg OFMAP SRAM BW")),
-        "avg_ifmap_dram_bw": _to_float(bandwidth.get(" Avg IFMAP DRAM BW")),
-        "avg_filter_dram_bw": _to_float(bandwidth.get(" Avg FILTER DRAM BW")),
-        "avg_ofmap_dram_bw": _to_float(bandwidth.get(" Avg OFMAP DRAM BW")),
-        "dram_ifmap_reads": _to_float(access.get(" DRAM IFMAP Reads")),
-        "dram_filter_reads": _to_float(access.get(" DRAM Filter Reads")),
-        "dram_ofmap_writes": _to_float(access.get(" DRAM OFMAP Writes")),
-        "parsed": bool(compute),
+    report_rows = {
+        "compute": _read_single_row_csv(report_dir / "COMPUTE_REPORT.csv"),
+        "bandwidth": _read_single_row_csv(report_dir / "BANDWIDTH_REPORT.csv"),
+        "access": _read_single_row_csv(report_dir / "DETAILED_ACCESS_REPORT.csv"),
     }
+    metrics: dict[str, Any] = {
+        key: _to_float(report_rows[source].get(column))
+        for key, (source, column) in _SCALESIM_REPORT_COLUMNS.items()
+    }
+    metrics["parsed"] = bool(report_rows["compute"])
 
     if metrics["total_cycles"] is not None and clock_seconds is not None:
         total_cycles = float(metrics["total_cycles"])
@@ -186,7 +172,7 @@ def run_scalesim_gemm(
     clock_seconds: float | None = None,
     save_traces: bool = False,
     timeout: int = 300,
-) -> ScaleSimResult:
+) -> dict[str, Any]:
     run_dir = Path(run_dir)
     run_dir.mkdir(parents=True, exist_ok=True)
 
@@ -243,14 +229,14 @@ def run_scalesim_gemm(
         else {"parsed": False}
     )
 
-    return ScaleSimResult(
-        cmd=cmd,
-        returncode=proc.returncode,
-        stdout=proc.stdout,
-        stderr=proc.stderr,
-        metrics=metrics,
-        report_dir=report_dir,
-    )
+    return {
+        "cmd": cmd,
+        "returncode": proc.returncode,
+        "stdout": proc.stdout,
+        "stderr": proc.stderr,
+        "metrics": metrics,
+        "report_dir": report_dir,
+    }
 
 
-__all__ = ["ScaleSimResult", "load_scalesim_reports", "run_scalesim_gemm"]
+__all__ = ["load_scalesim_reports", "run_scalesim_gemm"]

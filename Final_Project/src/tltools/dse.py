@@ -36,6 +36,23 @@ _SHARED_POINT_KEYS = (
     "backing_storage_bw",
     "local_buffer_bw",
 )
+_POINT_ROW_KEYS = (
+    "pe_x",
+    "pe_y",
+    "global_buffer_depth",
+    "local_buffer_depth",
+    "backing_storage_bw",
+    "local_buffer_bw",
+)
+_TIMELOOP_SUMMARY_DEFAULTS = {
+    "summary_cycles": None,
+    "summary_utilization_percent": None,
+    "summary_energy_uj": None,
+    "summary_edp_j_cycle": None,
+    "summary_area_mm2": None,
+    "bandwidth_throttling_min": None,
+    "bandwidth_throttling_max": None,
+}
 
 
 @dataclass(frozen=True)
@@ -202,6 +219,12 @@ def _round_summary_row(row: dict[str, Any]) -> dict[str, Any]:
     return {key: _round_summary_value(value) for key, value in row.items()}
 
 
+def _point_row(point: SweepPoint) -> dict[str, Any]:
+    row = {key: getattr(point, key) for key in _POINT_ROW_KEYS}
+    row["pe_count"] = point.pe_count
+    return row
+
+
 def _resolve_config_path(config_path: Path, configured_path: str | Path) -> Path:
     path = Path(configured_path)
     return path if path.is_absolute() else (config_path.parent / path).resolve()
@@ -335,16 +358,10 @@ def _run_timeloop_point(
         "latency_ns": metrics.get("latency_ns"),
         "pj_per_compute": metrics.get("pj_per_compute"),
         "pj_per_algorithmic_compute": metrics.get("pj_per_algorithmic_compute"),
-        "summary_cycles": None,
-        "summary_utilization_percent": None,
-        "summary_energy_uj": None,
-        "summary_edp_j_cycle": None,
-        "summary_area_mm2": None,
-        "bandwidth_throttling_min": None,
-        "bandwidth_throttling_max": None,
+        **_TIMELOOP_SUMMARY_DEFAULTS,
     }
     row.update(stats_summary)
-    return row, result
+    return row, result["returncode"]
 
 
 def _run_scalesim_point(
@@ -386,10 +403,10 @@ def _run_scalesim_point(
         clock_seconds=clock_seconds,
         timeout=timeout_seconds,
     )
-    metrics = result.metrics
+    metrics = result["metrics"]
     row: dict[str, Any] = {
         "simulator": "scalesim",
-        "returncode": result.returncode,
+        "returncode": result["returncode"],
         "cycles": metrics.get("total_cycles"),
         "latency_ns": metrics.get("latency_ns"),
         "summary_cycles": metrics.get("total_cycles"),
@@ -412,7 +429,7 @@ def _run_scalesim_point(
         "scalesim_ofmap_sram_kb": ofmap_sram_kb,
         "scalesim_dataflow": dataflow,
     }
-    return row, {"returncode": result.returncode}
+    return row, result["returncode"]
 
 
 def run_dse(config_path: str | Path) -> Path:
@@ -464,7 +481,7 @@ def run_dse(config_path: str | Path) -> Path:
         run_dir.mkdir(parents=True, exist_ok=True)
 
         if backend == "timeloop":
-            backend_row, result = _run_timeloop_point(
+            backend_row, returncode = _run_timeloop_point(
                 run_dir=run_dir,
                 point=point,
                 constants=constants,
@@ -476,7 +493,7 @@ def run_dse(config_path: str | Path) -> Path:
                 mapping_template_text=mapping_template_text,
             )
         else:
-            backend_row, result = _run_scalesim_point(
+            backend_row, returncode = _run_scalesim_point(
                 run_dir=run_dir,
                 point=point,
                 constants=constants,
@@ -484,24 +501,14 @@ def run_dse(config_path: str | Path) -> Path:
                 timeout_seconds=timeout_seconds,
             )
 
-        row: dict[str, Any] = {
-            "run_name": run_name,
-            "pe_x": point.pe_x,
-            "pe_y": point.pe_y,
-            "pe_count": point.pe_count,
-            "global_buffer_depth": point.global_buffer_depth,
-            "local_buffer_depth": point.local_buffer_depth,
-            "backing_storage_bw": point.backing_storage_bw,
-            "local_buffer_bw": point.local_buffer_bw,
-            "area_proxy_um2": _area_proxy_um2(point, constants),
-        }
+        row: dict[str, Any] = {"run_name": run_name, **_point_row(point), "area_proxy_um2": _area_proxy_um2(point, constants)}
         row.update(backend_row)
         for col in _SUMMARY_DROP_COLUMNS:
             row.pop(col, None)
 
         rows.append(row)
 
-        if row["returncode"] != 0 and not keep_failed_runs:
+        if returncode != 0 and not keep_failed_runs:
             shutil.rmtree(run_dir, ignore_errors=True)
 
     rows = [_round_summary_row(row) for row in rows]

@@ -2,20 +2,11 @@ from __future__ import annotations
 
 import shutil
 import subprocess
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Sequence
 
 from .config import default_env
 from .parse import load_accelergy_outputs, parse_timeloop_stdout
-
-
-@dataclass
-class CommandResult:
-    cmd: list[str]
-    returncode: int
-    stdout: str
-    stderr: str
 
 
 def require_tool(name: str) -> str:
@@ -40,28 +31,18 @@ def require_tool(name: str) -> str:
     return path
 
 
-def _stringify_args(values: Sequence[str | Path]) -> list[str]:
-    return [str(value) for value in values]
-
-
 def run_command(
     cmd: Sequence[str],
     cwd: str | Path | None = None,
     timeout: int = 120,
-) -> CommandResult:
-    proc = subprocess.run(
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
         list(cmd),
         cwd=str(cwd) if cwd else None,
         env=default_env(),
         capture_output=True,
         text=True,
         timeout=timeout,
-    )
-    return CommandResult(
-        cmd=list(cmd),
-        returncode=proc.returncode,
-        stdout=proc.stdout,
-        stderr=proc.stderr,
     )
 
 
@@ -71,7 +52,7 @@ def accelergy_art_from_arch(
     cwd: str | Path,
     prefix: str = "timeloop-model",
     timeout: int = 120,
-) -> CommandResult:
+) -> subprocess.CompletedProcess[str]:
     require_tool("accelergy")
     oprefix = prefix if prefix.endswith(".") else f"{prefix}."
     return run_command(
@@ -101,7 +82,7 @@ def timeloop_model_metrics(
     timeout: int = 120,
 ) -> dict[str, Any]:
     require_tool("timeloop-model")
-    result = run_command(["timeloop-model", *_stringify_args(inputs)], cwd=cwd, timeout=timeout)
+    result = run_command(["timeloop-model", *(str(x) for x in inputs)], cwd=cwd, timeout=timeout)
     combined = "\n".join([result.stdout, result.stderr])
 
     metrics = parse_timeloop_stdout(combined, clock_seconds=clock_seconds)

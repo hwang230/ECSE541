@@ -48,11 +48,11 @@ def main() -> None:
         timeout=args.timeout,
     )
 
-    print("Return code:", result.returncode)
-    print("Report dir:", result.report_dir)
-    pprint(result.metrics)
-    if result.stderr.strip():
-        print("\nSTDERR:\n", result.stderr)
+    print("Return code:", result["returncode"])
+    print("Report dir:", result["report_dir"])
+    pprint(result["metrics"])
+    if result["stderr"].strip():
+        print("\nSTDERR:\n", result["stderr"])
 
 
 if __name__ == "__main__":
