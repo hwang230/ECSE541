@@ -17,10 +17,6 @@ class CommandResult:
     stdout: str
     stderr: str
 
-    @property
-    def ok(self) -> bool:
-        return self.returncode == 0
-
 
 def require_tool(name: str) -> str:
     path = shutil.which(name)
@@ -63,21 +59,6 @@ def run_command(
         stdout=proc.stdout,
         stderr=proc.stderr,
     )
-
-
-def accelergy_help() -> CommandResult:
-    require_tool("accelergy")
-    return run_command(["accelergy", "--help"])
-
-
-def timeloop_model(*inputs: str | Path, cwd: str | Path | None = None) -> CommandResult:
-    require_tool("timeloop-model")
-    return run_command(["timeloop-model", *[str(x) for x in inputs]], cwd=cwd)
-
-
-def timeloop_mapper(*inputs: str | Path, cwd: str | Path | None = None) -> CommandResult:
-    require_tool("timeloop-mapper")
-    return run_command(["timeloop-mapper", *[str(x) for x in inputs]], cwd=cwd)
 
 
 def accelergy_art_from_arch(

@@ -1,0 +1,23 @@
+simulator: scalesim
+clock_seconds: 1e-9
+timeout_seconds: 1200
+keep_failed_runs: true
+
+out_dir: ../results/scalesim_runs_heavy_matmul
+
+constants:
+  datawidth: 8
+  # Larger than medium, but still bounded enough for practical Scale-Sim sweeps.
+  problem_m: 512
+  problem_n: 512
+  problem_k: 256
+  scalesim_dataflow: ws
+
+fixed:
+  local_buffer_depth: 256
+  local_buffer_bw: 64
+
+sweep:
+  pe_dim: [8, 16, 32, 64]
+  global_buffer_depth: [2097152, 4194304]
+  backing_storage_bw: [32, 64, 128, 256]

@@ -9,10 +9,14 @@ from tltools.runner import timeloop_model_metrics
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run one Timeloop model and print parsed metrics.")
-    parser.add_argument("--run-dir", type=Path, default=Path("src/tests/fixtures/minimal"))
-    parser.add_argument("--arch", default="arch_example.yaml")
-    parser.add_argument("--problem", default="problem_example.yaml")
-    parser.add_argument("--mapping", default="mapping_example.yaml")
+    parser.add_argument(
+        "--run-dir",
+        type=Path,
+        default=Path("src/results/dse_runs_medium_matmul/pt001_pe8x8_gb2097152_lb256_bbw32_lbw64"),
+    )
+    parser.add_argument("--arch", default="arch.yaml")
+    parser.add_argument("--problem", default="problem.yaml")
+    parser.add_argument("--mapping", default="mapping.yaml")
     parser.add_argument("--clock-seconds", type=float, default=1e-9)
     parser.add_argument("--timeout", type=int, default=120)
     args = parser.parse_args()

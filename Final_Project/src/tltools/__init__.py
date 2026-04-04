@@ -1,4 +1,10 @@
 from .dse import run_dse
-from .runner import timeloop_mapper, timeloop_model, timeloop_model_metrics
+from .runner import timeloop_model_metrics
+from .scalesim_runner import load_scalesim_reports, run_scalesim_gemm
 
-__all__ = ["run_dse", "timeloop_model", "timeloop_mapper", "timeloop_model_metrics"]
+__all__ = [
+    "load_scalesim_reports",
+    "run_dse",
+    "run_scalesim_gemm",
+    "timeloop_model_metrics",
+]

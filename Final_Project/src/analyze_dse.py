@@ -5,6 +5,9 @@ import csv
 from pathlib import Path
 from typing import Any
 
+CORE_METRICS = ("latency", "energy", "area", "utilization")
+RANKING_METRICS = CORE_METRICS + ("pj_per_compute", "summary_energy_uj", "summary_edp_j_cycle")
+
 
 def _to_float(value: str | None) -> float | None:
     if value is None:
@@ -71,7 +74,8 @@ def _sorted_top(rows: list[dict[str, Any]], key: str, topk: int) -> list[dict[st
         val = _metric_value(row, key)
         if val is not None:
             scored.append((val, row))
-    scored.sort(key=lambda x: x[0])
+    reverse = key == "utilization"
+    scored.sort(key=lambda x: x[0], reverse=reverse)
     return [r for _, r in scored[:topk]]
 
 
@@ -155,6 +159,25 @@ def _print_table(title: str, rows: list[dict[str, Any]]) -> None:
         )
 
 
+def _parse_metric_list(text: str) -> tuple[str, ...]:
+    metrics = tuple(part.strip() for part in text.split(",") if part.strip())
+    if not metrics:
+        raise SystemExit("Pareto metrics list cannot be empty.")
+    invalid = [metric for metric in metrics if metric not in CORE_METRICS]
+    if invalid:
+        raise SystemExit(
+            f"Unsupported Pareto metric(s): {', '.join(invalid)}. "
+            f"Choose from: {', '.join(CORE_METRICS)}."
+        )
+    return metrics
+
+
+def _default_pareto_metrics(metric: str, pareto_metrics_arg: str | None) -> tuple[str, ...]:
+    if pareto_metrics_arg:
+        return _parse_metric_list(pareto_metrics_arg)
+    return ("latency", metric)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Analyze DSE summary.csv and print top/pareto points")
     parser.add_argument(
@@ -168,13 +191,14 @@ def main() -> None:
         "--metric",
         type=str,
         default="energy",
-        choices=["energy", "latency", "area", "utilization", "pj_per_compute", "summary_energy_uj", "summary_edp_j_cycle"],
-        help="Energy-like metric to rank and build Pareto with cycles.",
+        choices=list(RANKING_METRICS),
+        help="Metric to rank by and, by default, pair with latency for a 2D Pareto front.",
     )
     parser.add_argument(
-        "--true-pareto",
-        action="store_true",
-        help="Build true 4D Pareto front using latency, energy, area, utilization.",
+        "--pareto-metrics",
+        type=str,
+        default=None,
+        help="Optional comma-separated Pareto metrics, for example: latency,area,utilization.",
     )
     parser.add_argument(
         "--pareto-out",
@@ -191,18 +215,21 @@ def main() -> None:
         raise SystemExit("No successful rows found in CSV (status=ok or returncode=0).")
 
     top_energy = _sorted_top(ok, args.metric, args.topk)
-    top_latency = _sorted_top(ok, "cycles", args.topk)
+    top_latency = _sorted_top(ok, "latency", args.topk)
 
     _print_table(f"Top {len(top_energy)} by {args.metric}", top_energy)
-    _print_table(f"Top {len(top_latency)} by cycles", top_latency)
+    _print_table(f"Top {len(top_latency)} by latency", top_latency)
 
-    if args.true_pareto:
-        pareto_metrics = ("latency", "energy", "area", "utilization")
-        pareto = _pareto_front(ok, pareto_metrics)
-        pareto_out = args.pareto_out or args.csv.with_name("pareto_true_latency_energy_area_util.csv")
+    pareto_metrics = _default_pareto_metrics(args.metric, args.pareto_metrics)
+
+    pareto = _pareto_front(ok, pareto_metrics)
+
+    if args.pareto_out is not None:
+        pareto_out = args.pareto_out
+    elif pareto_metrics == ("latency", args.metric):
+        pareto_out = args.csv.with_name("pareto_latency_vs_" + args.metric + ".csv")
     else:
-        pareto = _pareto_front(ok, ("latency", args.metric))
-        pareto_out = args.pareto_out or args.csv.with_name("pareto_latency_vs_" + args.metric + ".csv")
+        pareto_out = args.csv.with_name("pareto_" + "_".join(pareto_metrics) + ".csv")
 
     for row in pareto:
         util = _utilization_percent(row)

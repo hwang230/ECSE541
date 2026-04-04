@@ -10,3 +10,8 @@ src/results/dse_runs/
 src/results/dse_runs_medium_matmul/
 src/results/dse_runs_light_matmul/
 src/results/dse_runs_heavy_matmul/
+src/results/scalesim_demo/
+src/results/scalesim_runs_light_matmul/
+src/results/scalesim_runs_medium_matmul/
+src/results/scalesim_runs_heavy_matmul/
+src/results/*
