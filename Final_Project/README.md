@@ -89,23 +89,6 @@ python3 src/analyze_dse.py --csv src/results/dse_runs_heavy_matmul/summary.csv -
 
 ```
 
-If you want a PNG plot of the Pareto front:
-
-```bash
-python3 src/plot_pareto.py \
-  --csv src/results/dse_runs_light_matmul/pareto_true_latency_energy_area_util.csv \
-  --all-csv src/results/dse_runs_light_matmul/summary.csv
-
-python3 src/plot_pareto.py \
-  --csv src/results/dse_runs_medium_matmul/pareto_true_latency_energy_area_util.csv \
-  --all-csv src/results/dse_runs_medium_matmul/summary.csv
-
-python3 src/plot_pareto.py \
-  --csv src/results/dse_runs_heavy_matmul/pareto_true_latency_energy_area_util.csv \
-  --all-csv src/results/dse_runs_heavy_matmul/summary.csv
-
-```
-
 ## Run Scale-Sim
 
 Use the new helper to run a single GEMM workload through Scale-Sim from this repo:
@@ -179,30 +162,4 @@ This produces Pareto CSVs such as:
 - `src/results/scalesim_runs_medium_matmul/pareto_latency_area_utilization.csv`
 - `src/results/scalesim_runs_heavy_matmul/pareto_latency_area_utilization.csv`
 
-You can also generate a Scale-Sim Pareto plot directly. A good default view is latency on the x-axis, area on the y-axis, and utilization as color:
-
-```bash
-python3 src/plot_pareto.py \
-  --csv src/results/scalesim_runs_light_matmul/pareto_latency_area_utilization.csv \
-  --all-csv src/results/scalesim_runs_light_matmul/summary.csv \
-  --y-metric area \
-  --out src/results/scalesim_runs_light_matmul/pareto_latency_area_utilization.png
-
-python3 src/plot_pareto.py \
-  --csv src/results/scalesim_runs_medium_matmul/pareto_latency_area_utilization.csv \
-  --all-csv src/results/scalesim_runs_medium_matmul/summary.csv \
-  --y-metric area \
-  --out src/results/scalesim_runs_medium_matmul/pareto_latency_area_utilization.png
-
-python3 src/plot_pareto.py \
-  --csv src/results/scalesim_runs_heavy_matmul/pareto_latency_area_utilization.csv \
-  --all-csv src/results/scalesim_runs_heavy_matmul/summary.csv \
-  --y-metric area \
-  --out src/results/scalesim_runs_heavy_matmul/pareto_latency_area_utilization.png
-```
-
-This produces:
-
-- `src/results/scalesim_runs_light_matmul/pareto_latency_area_utilization.png`
-- `src/results/scalesim_runs_medium_matmul/pareto_latency_area_utilization.png`
-- `src/results/scalesim_runs_heavy_matmul/pareto_latency_area_utilization.png`
+Pareto analysis currently stops at CSV generation. Plot generation has been removed for now.
