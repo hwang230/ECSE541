@@ -40,6 +40,10 @@ def require_tool(name: str) -> str:
     return path
 
 
+def _stringify_args(values: Sequence[str | Path]) -> list[str]:
+    return [str(value) for value in values]
+
+
 def run_command(
     cmd: Sequence[str],
     cwd: str | Path | None = None,
@@ -97,7 +101,7 @@ def timeloop_model_metrics(
     timeout: int = 120,
 ) -> dict[str, Any]:
     require_tool("timeloop-model")
-    result = run_command(["timeloop-model", *[str(x) for x in inputs]], cwd=cwd, timeout=timeout)
+    result = run_command(["timeloop-model", *_stringify_args(inputs)], cwd=cwd, timeout=timeout)
     combined = "\n".join([result.stdout, result.stderr])
 
     metrics = parse_timeloop_stdout(combined, clock_seconds=clock_seconds)

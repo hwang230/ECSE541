@@ -14,6 +14,7 @@ Y_AXIS_LABELS = {
     "utilization": "Utilization (%)",
     "area": "Area Proxy (um^2)",
 }
+MAXIMIZE_METRICS = {"utilization"}
 
 
 def _to_float(value: str | None) -> float | None:
@@ -86,15 +87,62 @@ def _extract_points(
 
 def _extract_metric_points(
     rows: list[dict[str, str]], x_metric: str, y_metric: str
-) -> list[tuple[float, float, str]]:
-    points: list[tuple[float, float, str]] = []
+) -> list[tuple[float, float, float | None, str]]:
+    points: list[tuple[float, float, float | None, str]] = []
     for row in rows:
         x_value = _metric(row, x_metric)
         y_value = _metric(row, y_metric)
+        util_value = _metric(row, "utilization")
         if None in (x_value, y_value):
             continue
-        points.append((float(x_value), float(y_value), str(row.get("run_name", ""))))
+        points.append((float(x_value), float(y_value), float(util_value) if util_value is not None else None, str(row.get("run_name", ""))))
     return points
+
+
+def _dominates_2d(a: tuple[float, float], b: tuple[float, float], x_metric: str, y_metric: str) -> bool:
+    directions = (
+        "max" if x_metric in MAXIMIZE_METRICS else "min",
+        "max" if y_metric in MAXIMIZE_METRICS else "min",
+    )
+    not_worse_all = True
+    strictly_better_any = False
+    for idx, direction in enumerate(directions):
+        av = a[idx]
+        bv = b[idx]
+        if direction == "max":
+            if av < bv:
+                not_worse_all = False
+                break
+            if av > bv:
+                strictly_better_any = True
+        else:
+            if av > bv:
+                not_worse_all = False
+                break
+            if av < bv:
+                strictly_better_any = True
+    return not_worse_all and strictly_better_any
+
+
+def _pareto_curve_2d(
+    points: list[tuple[float, float, float | None, str]], x_metric: str, y_metric: str
+) -> list[tuple[float, float, float | None, str]]:
+    front: list[tuple[float, float, float | None, str]] = []
+    for cand in points:
+        cand_xy = cand[:2]
+        dominated = False
+        kept: list[tuple[float, float, float | None, str]] = []
+        for existing in front:
+            existing_xy = existing[:2]
+            if _dominates_2d(existing_xy, cand_xy, x_metric, y_metric):
+                dominated = True
+                break
+            if not _dominates_2d(cand_xy, existing_xy, x_metric, y_metric):
+                kept.append(existing)
+        if not dominated:
+            kept.append(cand)
+            front = kept
+    return sorted(front, key=lambda point: point[0], reverse=x_metric in MAXIMIZE_METRICS)
 
 
 def plot_pareto(
@@ -193,14 +241,36 @@ def plot_metric_pair(
     if not points:
         raise SystemExit(f"No plottable points in {csv_path} for {x_metric} vs {y_metric}")
 
-    x_vals, y_vals, labels = map(list, zip(*points))
-    best_i = min(range(len(points)), key=lambda i: (x_vals[i], y_vals[i]))
+    x_vals, y_vals, util_vals, labels = map(list, zip(*points))
+    pareto_points = _pareto_curve_2d(points, x_metric, y_metric)
+    p_x, p_y, p_util, p_labels = map(list, zip(*pareto_points))
+    best_i = 0
 
     fig, ax = plt.subplots(figsize=(9, 6))
-    ax.scatter(x_vals, y_vals, s=42, c="#2f7f7f", alpha=0.85, edgecolors="black", linewidths=0.4)
+    show_util_color = x_metric != "utilization" and y_metric != "utilization" and all(v is not None for v in util_vals)
+    if show_util_color:
+        sc = ax.scatter(
+            x_vals,
+            y_vals,
+            s=30,
+            c=util_vals,
+            cmap="viridis",
+            vmin=0.0,
+            vmax=100.0,
+            alpha=0.85,
+            edgecolors="none",
+            label="All points",
+        )
+        cbar = fig.colorbar(sc, ax=ax)
+        cbar.set_label("Utilization (%)")
+        ax.scatter(p_x, p_y, s=56, facecolors="none", edgecolors="black", linewidths=1.0, label="Pareto points")
+    else:
+        ax.scatter(x_vals, y_vals, s=28, c="lightgray", alpha=0.75, edgecolors="none", label="All points")
+        ax.scatter(p_x, p_y, s=52, c="#2f7f7f", alpha=0.95, edgecolors="black", linewidths=0.5, label="Pareto points")
+    ax.plot(p_x, p_y, color="black", linewidth=1.4, alpha=0.9, label="Pareto curve")
     ax.annotate(
-        labels[best_i],
-        (x_vals[best_i], y_vals[best_i]),
+        p_labels[best_i],
+        (p_x[best_i], p_y[best_i]),
         textcoords="offset points",
         xytext=(8, 8),
         fontsize=8,
@@ -209,6 +279,7 @@ def plot_metric_pair(
     ax.set_ylabel(Y_AXIS_LABELS.get(y_metric, y_metric))
     ax.set_title(title or f"{x_metric} vs {y_metric}")
     ax.grid(True, linestyle="--", linewidth=0.5, alpha=0.5)
+    ax.legend(loc="best")
 
     out_png.parent.mkdir(parents=True, exist_ok=True)
     fig.tight_layout()

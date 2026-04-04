@@ -6,27 +6,37 @@ from typing import Any
 
 import yaml
 
-
-_SUMMARY_RE_WITH_ALGO = re.compile(
-    r"Utilization\s*=\s*(?P<util>[0-9.]+)\s*\|\s*"
-    r"pJ/Algorithmic-Compute\s*=\s*(?P<pj_algo>[0-9.]+)\s*\|\s*"
-    r"pJ/Compute\s*=\s*(?P<pj_compute>[0-9.]+)\s*\|\s*"
-    r"Cycles\s*=\s*(?P<cycles>[0-9]+)"
+_SUMMARY_PATTERNS = (
+    (_SUMMARY_RE_WITH_ALGO := re.compile(
+        r"Utilization\s*=\s*(?P<util>[0-9.]+)\s*\|\s*"
+        r"pJ/Algorithmic-Compute\s*=\s*(?P<pj_algo>[0-9.]+)\s*\|\s*"
+        r"pJ/Compute\s*=\s*(?P<pj_compute>[0-9.]+)\s*\|\s*"
+        r"Cycles\s*=\s*(?P<cycles>[0-9]+)"
+    ), True),
+    (_SUMMARY_RE_DENSE := re.compile(
+        r"Utilization\s*=\s*(?P<util>[0-9.]+)\s*\|\s*"
+        r"pJ/Compute\s*=\s*(?P<pj_compute>[0-9.]+)\s*\|\s*"
+        r"Cycles\s*=\s*(?P<cycles>[0-9]+)"
+    ), False),
 )
-_SUMMARY_RE_DENSE = re.compile(
-    r"Utilization\s*=\s*(?P<util>[0-9.]+)\s*\|\s*"
-    r"pJ/Compute\s*=\s*(?P<pj_compute>[0-9.]+)\s*\|\s*"
-    r"Cycles\s*=\s*(?P<cycles>[0-9]+)"
-)
+_ACCELERGY_OUTPUT_SUFFIXES = {
+    "ert": "ERT.yaml",
+    "ert_summary": "ERT_summary.yaml",
+    "art": "ART.yaml",
+    "art_summary": "ART_summary.yaml",
+    "flattened_architecture": "flattened_architecture.yaml",
+}
 
 
 def parse_timeloop_stdout(text: str, *, clock_seconds: float | None = None) -> dict[str, Any]:
-    match = _SUMMARY_RE_WITH_ALGO.search(text)
-    has_algo = True
-    if not match:
-        match = _SUMMARY_RE_DENSE.search(text)
-        has_algo = False
-    if not match:
+    match = None
+    has_algo = False
+    for pattern, pattern_has_algo in _SUMMARY_PATTERNS:
+        match = pattern.search(text)
+        if match:
+            has_algo = pattern_has_algo
+            break
+    if match is None:
         return {"raw_stdout": text, "parsed": False}
 
     cycles = int(match.group("cycles"))
@@ -58,11 +68,6 @@ def load_yaml_if_exists(path: str | Path) -> dict[str, Any] | None:
 def load_accelergy_outputs(run_dir: str | Path, prefix: str = "timeloop-model") -> dict[str, Any]:
     run_dir = Path(run_dir)
     return {
-        "ert": load_yaml_if_exists(run_dir / f"{prefix}.ERT.yaml"),
-        "ert_summary": load_yaml_if_exists(run_dir / f"{prefix}.ERT_summary.yaml"),
-        "art": load_yaml_if_exists(run_dir / f"{prefix}.ART.yaml"),
-        "art_summary": load_yaml_if_exists(run_dir / f"{prefix}.ART_summary.yaml"),
-        "flattened_architecture": load_yaml_if_exists(
-            run_dir / f"{prefix}.flattened_architecture.yaml"
-        ),
+        key: load_yaml_if_exists(run_dir / f"{prefix}.{suffix}")
+        for key, suffix in _ACCELERGY_OUTPUT_SUFFIXES.items()
     }

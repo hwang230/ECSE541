@@ -22,6 +22,20 @@ _SUMMARY_DROP_COLUMNS = {
     "local_buffer_depth",
     "area_um2_art_sum",
 }
+_POINT_FIELDS = (
+    "pe_x",
+    "pe_y",
+    "global_buffer_depth",
+    "local_buffer_depth",
+    "backing_storage_bw",
+    "local_buffer_bw",
+)
+_SHARED_POINT_KEYS = (
+    "global_buffer_depth",
+    "local_buffer_depth",
+    "backing_storage_bw",
+    "local_buffer_bw",
+)
 
 
 @dataclass(frozen=True)
@@ -67,6 +81,10 @@ def _coerce_sweep_values(value: Any) -> list[int]:
     return [int(value)]
 
 
+def _missing_sweep_keys(sweep: dict[str, Any], fixed: dict[str, Any], keys: tuple[str, ...]) -> list[str]:
+    return [key for key in keys if key not in sweep and key not in fixed]
+
+
 def _merged_sweep_values(sweep: dict[str, Any], fixed: dict[str, Any], key: str) -> list[int]:
     if key in sweep:
         return _coerce_sweep_values(sweep[key])
@@ -81,22 +99,13 @@ def _expand_points(sweep: dict[str, Any], fixed: dict[str, Any] | None = None) -
     if "pe_dim" in sweep or "pe_dim" in fixed:
         points: list[SweepPoint] = []
         pe_dims = _merged_sweep_values(sweep, fixed, "pe_dim")
-        required = [
-            "global_buffer_depth",
-            "local_buffer_depth",
-            "backing_storage_bw",
-            "local_buffer_bw",
-        ]
-        missing = [k for k in required if k not in sweep and k not in fixed]
+        missing = _missing_sweep_keys(sweep, fixed, _SHARED_POINT_KEYS)
         if missing:
             raise ValueError(f"Missing sweep keys: {', '.join(missing)}")
 
         for pe_dim, gb, lb, b_bw, l_bw in itertools.product(
             pe_dims,
-            _merged_sweep_values(sweep, fixed, "global_buffer_depth"),
-            _merged_sweep_values(sweep, fixed, "local_buffer_depth"),
-            _merged_sweep_values(sweep, fixed, "backing_storage_bw"),
-            _merged_sweep_values(sweep, fixed, "local_buffer_bw"),
+            *(_merged_sweep_values(sweep, fixed, key) for key in _SHARED_POINT_KEYS),
         ):
             points.append(
                 SweepPoint(
@@ -110,20 +119,12 @@ def _expand_points(sweep: dict[str, Any], fixed: dict[str, Any] | None = None) -
             )
         return points
 
-    required = [
-        "pe_x",
-        "pe_y",
-        "global_buffer_depth",
-        "local_buffer_depth",
-        "backing_storage_bw",
-        "local_buffer_bw",
-    ]
-    missing = [k for k in required if k not in sweep and k not in fixed]
+    missing = _missing_sweep_keys(sweep, fixed, _POINT_FIELDS)
     if missing:
         raise ValueError(f"Missing sweep keys: {', '.join(missing)}")
 
     points: list[SweepPoint] = []
-    for values in itertools.product(*(_merged_sweep_values(sweep, fixed, key) for key in required)):
+    for values in itertools.product(*(_merged_sweep_values(sweep, fixed, key) for key in _POINT_FIELDS)):
         points.append(
             SweepPoint(
                 pe_x=int(values[0]),
@@ -199,6 +200,31 @@ def _round_summary_value(value: Any) -> Any:
 
 def _round_summary_row(row: dict[str, Any]) -> dict[str, Any]:
     return {key: _round_summary_value(value) for key, value in row.items()}
+
+
+def _resolve_config_path(config_path: Path, configured_path: str | Path) -> Path:
+    path = Path(configured_path)
+    return path if path.is_absolute() else (config_path.parent / path).resolve()
+
+
+def _write_if_needed(path: Path, text: str, overwrite: bool) -> None:
+    if overwrite or not path.exists():
+        path.write_text(text, encoding="utf-8")
+
+
+def _load_existing_rows(csv_path: Path) -> dict[str, dict[str, Any]]:
+    if not csv_path.exists():
+        return {}
+
+    existing_rows: dict[str, dict[str, Any]] = {}
+    with csv_path.open("r", encoding="utf-8", newline="") as f:
+        for row in csv.DictReader(f):
+            run_name = str(row.get("run_name", "")).strip()
+            if run_name:
+                for col in _SUMMARY_DROP_COLUMNS:
+                    row.pop(col, None)
+                existing_rows[run_name] = row
+    return existing_rows
 
 
 def _simulator_backend(config: dict[str, Any]) -> str:
@@ -288,12 +314,9 @@ def _run_timeloop_point(
     arch_path = run_dir / "arch.yaml"
     problem_path_out = run_dir / "problem.yaml"
     mapping_path_out = run_dir / "mapping.yaml"
-    if overwrite_inputs or not arch_path.exists():
-        arch_path.write_text(arch_text, encoding="utf-8")
-    if overwrite_inputs or not problem_path_out.exists():
-        problem_path_out.write_text(problem_text, encoding="utf-8")
-    if overwrite_inputs or not mapping_path_out.exists():
-        mapping_path_out.write_text(mapping_text, encoding="utf-8")
+    _write_if_needed(arch_path, arch_text, overwrite_inputs)
+    _write_if_needed(problem_path_out, problem_text, overwrite_inputs)
+    _write_if_needed(mapping_path_out, mapping_text, overwrite_inputs)
 
     result = timeloop_model_metrics(
         "arch.yaml",
@@ -414,17 +437,9 @@ def run_dse(config_path: str | Path) -> Path:
     problem_template_text = ""
     mapping_template_text = ""
     if backend == "timeloop":
-        arch_template_path = Path(config["arch_template"])
-        if not arch_template_path.is_absolute():
-            arch_template_path = (config_path.parent / arch_template_path).resolve()
-
-        problem_path = Path(config["problem"])
-        if not problem_path.is_absolute():
-            problem_path = (config_path.parent / problem_path).resolve()
-
-        mapping_path = Path(config["mapping"])
-        if not mapping_path.is_absolute():
-            mapping_path = (config_path.parent / mapping_path).resolve()
+        arch_template_path = _resolve_config_path(config_path, config["arch_template"])
+        problem_path = _resolve_config_path(config_path, config["problem"])
+        mapping_path = _resolve_config_path(config_path, config["mapping"])
 
         template_text = arch_template_path.read_text(encoding="utf-8")
         problem_template_text = problem_path.read_text(encoding="utf-8")
@@ -432,16 +447,8 @@ def run_dse(config_path: str | Path) -> Path:
     points = _expand_points(config["sweep"], fixed)
 
     rows: list[dict[str, Any]] = []
-    existing_rows_by_name: dict[str, dict[str, Any]] = {}
     csv_path = out_root / "summary.csv"
-    if resume_existing and csv_path.exists():
-        with csv_path.open("r", encoding="utf-8", newline="") as f:
-            for row in csv.DictReader(f):
-                run_name = str(row.get("run_name", "")).strip()
-                if run_name:
-                    for col in _SUMMARY_DROP_COLUMNS:
-                        row.pop(col, None)
-                    existing_rows_by_name[run_name] = row
+    existing_rows_by_name = _load_existing_rows(csv_path) if resume_existing else {}
 
     for idx, point in enumerate(points, start=1):
         run_name = _sanitize_name(
