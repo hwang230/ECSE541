@@ -1,0 +1,27 @@
+# Matmul-focused medium workload with a weight-stationary local-buffer mapping.
+clock_seconds: 1e-9
+timeout_seconds: 180
+keep_failed_runs: true
+
+arch_template: templates/systolic_array_arch.template.yaml
+problem: problem_example.yaml
+mapping: mapping_weight_stationary.yaml
+out_dir: ../results/dse_runs_medium_matmul_ws
+
+constants:
+  technology: 22nm
+  datawidth: 8
+  global_cycle_seconds: 1e-9
+  problem_m: 512
+  problem_n: 512
+  problem_k: 256
+  k_tile: 16
+
+fixed:
+  local_buffer_depth: 256
+  local_buffer_bw: 64
+
+sweep:
+  pe_dim: [8, 16, 32, 64]
+  global_buffer_depth: [2097152, 4194304]
+  backing_storage_bw: [32, 64, 128, 256]

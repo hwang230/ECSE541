@@ -11,7 +11,7 @@ constants:
   problem_m: 64
   problem_n: 64
   problem_k: 16
-  scalesim_dataflow: os
+  scalesim_dataflow: ws
 
 fixed:
   local_buffer_depth: 256
@@ -19,5 +19,5 @@ fixed:
 
 sweep:
   pe_dim: [8, 16, 32, 64]
-  global_buffer_depth: [131072, 262144]
+  global_buffer_depth: [2097152, 4194304]
   backing_storage_bw: [32, 64, 128, 256]

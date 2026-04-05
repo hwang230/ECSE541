@@ -12,7 +12,7 @@ constants:
   problem_m: 512
   problem_n: 512
   problem_k: 256
-  scalesim_dataflow: os
+  scalesim_dataflow: ws
 
 fixed:
   local_buffer_depth: 256

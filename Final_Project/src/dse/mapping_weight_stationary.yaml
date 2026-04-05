@@ -1,0 +1,20 @@
+mapping:
+  # Keep weights resident in the PE-local buffer while inputs stream through
+  # and outputs can still accumulate locally.
+  - target: Buffer
+    type: datatype
+    keep: [B, Z]
+    bypass: [A]
+  - target: BackingStorage
+    type: temporal
+    factors: M={{TOP_M_FACTOR}} N={{TOP_N_FACTOR}} K={{TOP_K_OUTER_FACTOR}}
+    permutation: MNK
+  - target: BackingStorage
+    type: spatial
+    factors: M={{PE_X}} N={{PE_Y}} K=1
+    permutation: MNK
+    split: 2
+  - target: Buffer
+    type: temporal
+    factors: M=1 N=1 K={{K_TILE}}
+    permutation: MNK
