@@ -1,34 +1,33 @@
-# Final Project: Timeloop + Accelergy DSE Scaffold
+# Final Project: Timeloop and SCALE-Sim DSE
 
-This project now includes a clean, memory-centric DSE flow for systolic-array exploration.
+This repo supports systolic-array design-space exploration with two simulators:
 
-## What was added
+- Timeloop + Accelergy
+- SCALE-Sim
 
-- `src/run_dse.py`: CLI entrypoint for design-space sweeps.
-- `src/tltools/dse.py`: sweep engine (template rendering, run orchestration, CSV summary).
-- `src/dse/sweep.matmul.medium.yaml`: medium matmul sweep configuration.
-- `src/dse/templates/systolic_array_arch.template.yaml`: architecture template with placeholders.
-- `src/dse/problem_example.yaml`, `src/dse/mapping_example.yaml`: starter workload + mapping.
+## Core Files
+
+- `src/run_dse.py`: runs sweep configs
+- `src/run_scalesim.py`: runs a single direct SCALE-Sim experiment
+- `src/analyze_dse.py`: generates Pareto CSVs and plots
+- `src/tltools/dse.py`: shared DSE engine
 
 ## Setup
 
-Run everything from the project root:
+Run from the project root:
 
 ```bash
 cd ./ECSE541/Final_Project
 ```
 
-Make sure `accelergy`, `timeloop-model`, and `timeloop-mapper` are available on `PATH`.
-
-If you are using the local Timeloop Python environment in this repo, a typical setup is:
+Activate the local environment and expose Timeloop binaries:
 
 ```bash
 source timeloop-python/venv/bin/activate
-export PATH="$PWD/timeloop/build:$PWD/timeloop/build/applications/model:$PWD/timeloop/build/applications/mapper:$PATH"
-export PATH="$PWD/timeloop-python/venv/bin:$PATH"
+export PATH="$PWD/timeloop/build:$PWD/timeloop/build/applications/model:$PWD/timeloop/build/applications/mapper:$PWD/timeloop-python/venv/bin:$PATH"
 ```
 
-Verify the tools before running DSE:
+Verify:
 
 ```bash
 which timeloop-model
@@ -36,43 +35,47 @@ which timeloop-mapper
 which accelergy
 ```
 
-For Scale-Sim support, install it into the same local venv:
+Install SCALE-Sim if needed:
 
 ```bash
 timeloop-python/venv/bin/pip install scalesim
 ```
 
-You can verify the install with:
+## Experiment Matrix
 
-```bash
-timeloop-python/venv/bin/python -m scalesim.scale --help
-```
+Timeloop output-stationary:
 
-## Quick Start
+- `src/dse/sweep.matmul.light.yaml`
+- `src/dse/sweep.matmul.medium.yaml`
+- `src/dse/sweep.matmul.heavy.yaml`
 
-Run the default medium-workload DSE:
+Timeloop weight-stationary:
 
-```bash
-python3 src/run_dse.py --config src/dse/sweep.matmul.medium.yaml
-```
+- `src/dse/sweep.matmul.light.ws.yaml`
+- `src/dse/sweep.matmul.medium.ws.yaml`
+- `src/dse/sweep.matmul.heavy.ws.yaml`
 
-Results are saved to:
+SCALE-Sim weight-stationary:
 
-- `src/results/dse_runs_medium_matmul/<design-point>/...` (per-point artifacts)
-- `src/results/dse_runs_medium_matmul/summary.csv` (aggregated metrics)
+- `src/dse/sweep.matmul.light.scalesim.yaml`
+- `src/dse/sweep.matmul.medium.scalesim.yaml`
+- `src/dse/sweep.matmul.heavy.scalesim.yaml`
 
-## Active Sweep Knobs (`sweep.matmul.medium.yaml`)
+SCALE-Sim output-stationary:
 
-Only parameters with more than one candidate value live under `sweep:`:
+- `src/dse/sweep.matmul.light.os.scalesim.yaml`
+- `src/dse/sweep.matmul.medium.os.scalesim.yaml`
 
-- `pe_dim`: square PE array dimension, expanded internally to `pe_x = pe_y`
-- `global_buffer_depth`: backing storage capacity
-- `backing_storage_bw`: backing storage read/write bandwidth
+Supporting inputs:
 
+- `src/dse/problem_example.yaml`
+- `src/dse/mapping_example.yaml`
+- `src/dse/mapping_weight_stationary.yaml`
+- `src/dse/templates/systolic_array_arch.template.yaml`
 
-## Run DSE And Pareto
+## Run Sweeps
 
-Run any workload sweep with:
+Timeloop OS:
 
 ```bash
 python3 src/run_dse.py --config src/dse/sweep.matmul.light.yaml
@@ -80,53 +83,15 @@ python3 src/run_dse.py --config src/dse/sweep.matmul.medium.yaml
 python3 src/run_dse.py --config src/dse/sweep.matmul.heavy.yaml
 ```
 
-Then generate the Pareto front from the corresponding `summary.csv`:
+Timeloop WS:
 
 ```bash
-python3 src/analyze_dse.py --csv src/results/dse_runs_light_matmul/summary.csv --pareto-metrics latency,energy,area,utilization
-python3 src/analyze_dse.py --csv src/results/dse_runs_medium_matmul/summary.csv --pareto-metrics latency,energy,area,utilization
-python3 src/analyze_dse.py --csv src/results/dse_runs_heavy_matmul/summary.csv --pareto-metrics latency,energy,area,utilization
-
+python3 src/run_dse.py --config src/dse/sweep.matmul.light.ws.yaml
+python3 src/run_dse.py --config src/dse/sweep.matmul.medium.ws.yaml
+python3 src/run_dse.py --config src/dse/sweep.matmul.heavy.ws.yaml
 ```
 
-## Run Scale-Sim
-
-Use the new helper to run a single GEMM workload through Scale-Sim from this repo:
-
-```bash
-python3 src/run_scalesim.py \
-  --run-dir src/results/scalesim_demo \
-  --m 64 --n 64 --k 64 \
-  --array-rows 16 --array-cols 16 \
-  --ifmap-sram-kb 64 \
-  --filter-sram-kb 64 \
-  --ofmap-sram-kb 64 \
-  --bandwidths 16,16,16
-```
-
-This generates:
-
-- `src/results/scalesim_demo/scalesim.cfg`
-- `src/results/scalesim_demo/scalesim_topology.csv`
-- `src/results/scalesim_demo/scalesim_layout.csv`
-- `src/results/scalesim_demo/scalesim_out/scalesim_run/COMPUTE_REPORT.csv`
-- `src/results/scalesim_demo/scalesim_out/scalesim_run/BANDWIDTH_REPORT.csv`
-- `src/results/scalesim_demo/scalesim_out/scalesim_run/DETAILED_ACCESS_REPORT.csv`
-
-The helper also prints parsed metrics such as:
-
-- total cycles
-- total cycles including prefetch
-- stall cycles
-- overall utilization
-- mapping efficiency
-- average SRAM/DRAM bandwidths
-
-## Run Scale-Sim DSE
-
-The DSE driver now supports a Scale-Sim backend selected in config with `simulator: scalesim`.
-
-Example workload sweeps:
+SCALE-Sim WS:
 
 ```bash
 python3 src/run_dse.py --config src/dse/sweep.matmul.light.scalesim.yaml
@@ -134,32 +99,51 @@ python3 src/run_dse.py --config src/dse/sweep.matmul.medium.scalesim.yaml
 python3 src/run_dse.py --config src/dse/sweep.matmul.heavy.scalesim.yaml
 ```
 
-These write workload-specific summary CSVs such as:
-
-- `src/results/scalesim_runs_light_matmul/summary.csv`
-- `src/results/scalesim_runs_medium_matmul/summary.csv`
-- `src/results/scalesim_runs_heavy_matmul/summary.csv`
-
-Scale-Sim results do not include Accelergy energy, so the recommended Pareto flow is a 3D front over latency, area, and utilization:
+SCALE-Sim OS:
 
 ```bash
-python3 src/analyze_dse.py \
-  --csv src/results/scalesim_runs_light_matmul/summary.csv \
-  --pareto-metrics latency,area,utilization
-
-python3 src/analyze_dse.py \
-  --csv src/results/scalesim_runs_medium_matmul/summary.csv \
-  --pareto-metrics latency,area,utilization
-
-python3 src/analyze_dse.py \
-  --csv src/results/scalesim_runs_heavy_matmul/summary.csv \
-  --pareto-metrics latency,area,utilization
+python3 src/run_dse.py --config src/dse/sweep.matmul.light.os.scalesim.yaml
+python3 src/run_dse.py --config src/dse/sweep.matmul.medium.os.scalesim.yaml
 ```
 
-This produces Pareto CSVs such as:
+Sweep knobs used across the configs:
 
-- `src/results/scalesim_runs_light_matmul/pareto_latency_area_utilization.csv`
-- `src/results/scalesim_runs_medium_matmul/pareto_latency_area_utilization.csv`
-- `src/results/scalesim_runs_heavy_matmul/pareto_latency_area_utilization.csv`
+- `pe_dim`
+- `global_buffer_depth`
+- `backing_storage_bw`
 
-Pareto analysis currently stops at CSV generation. Plot generation has been removed for now.
+## Analyze Results
+
+Timeloop Pareto CSV:
+
+```bash
+python3 src/analyze_dse.py --csv src/results/dse_runs_light_matmul/summary.csv --pareto-metrics latency,energy,area,utilization
+```
+
+Timeloop pair plots:
+
+```bash
+python3 src/analyze_dse.py --csv src/results/dse_runs_light_matmul/summary.csv --pareto-metrics latency,energy,area,utilization --plot-pairs --workload-label "Light" --tool-label "Timeloop"
+python3 src/analyze_dse.py --csv src/results/dse_runs_light_matmul_ws/summary.csv --pareto-metrics latency,energy,area,utilization --plot-pairs --workload-label "Light" --tool-label "Timeloop"
+```
+
+SCALE-Sim Pareto CSV and overlay plots:
+
+```bash
+python3 src/analyze_dse.py --csv src/results/scalesim_runs_light_matmul/summary.csv --pareto-metrics latency,area,utilization --plot-overlay --workload-label "Light" --tool-label "SCALE-Sim"
+python3 src/analyze_dse.py --csv src/results/scalesim_runs_medium_matmul/summary.csv --pareto-metrics latency,area,utilization --plot-overlay --workload-label "Medium" --tool-label "SCALE-Sim"
+```
+
+Typical outputs:
+
+- `summary.csv`
+- `pareto_*.csv`
+- `pair_*.png` for Timeloop
+- `highlighted_latency_vs_area.png` and `highlighted_latency_vs_utilization.png` for SCALE-Sim
+
+## Notes
+
+- Timeloop results are maintained for both output-stationary and weight-stationary mappings.
+- SCALE-Sim results are maintained for weight-stationary on light, medium, and heavy workloads.
+- SCALE-Sim output-stationary is kept for light and medium workloads.
+- Heavy SCALE-Sim output-stationary was dropped because it was not practical to complete within runtime limits.
