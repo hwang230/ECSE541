@@ -2,6 +2,7 @@ simulator: scalesim
 clock_seconds: 1e-9
 timeout_seconds: 900
 keep_failed_runs: true
+resume_existing: false
 
 out_dir: ../results/scalesim_runs_medium_matmul
 
@@ -11,7 +12,7 @@ constants:
   problem_m: 256
   problem_n: 256
   problem_k: 128
-  scalesim_dataflow: ws
+  scalesim_dataflow: os
 
 fixed:
   local_buffer_depth: 256
