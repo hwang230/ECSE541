@@ -205,6 +205,7 @@ def _write_overlay_plots(
     csv_path: Path,
     workload_label: str | None,
     tool_label: str | None,
+    output_prefix: str = "",
 ) -> list[Path]:
     _, plt = _import_matplotlib()
 
@@ -241,8 +242,9 @@ def _write_overlay_plots(
     )
 
     title_suffix = _plot_title_suffix(csv_path, workload_label, tool_label)
-    out_area = csv_path.with_name("highlighted_latency_vs_area.png")
-    out_util = csv_path.with_name("highlighted_latency_vs_utilization.png")
+    prefix = f"{output_prefix}_" if output_prefix else ""
+    out_area = csv_path.with_name(f"{prefix}highlighted_latency_vs_area.png")
+    out_util = csv_path.with_name(f"{prefix}highlighted_latency_vs_utilization.png")
 
     all_latency = [float(_metric_value(row, "latency") or 0.0) for row in all_points]
     all_area = [float(_metric_value(row, "area") or 0.0) for row in all_points]
@@ -345,6 +347,7 @@ def _write_pair_pareto_plots(
     csv_path: Path,
     workload_label: str | None,
     tool_label: str | None,
+    output_prefix: str = "",
 ) -> list[Path]:
     _, plt = _import_matplotlib()
 
@@ -380,7 +383,8 @@ def _write_pair_pareto_plots(
         x_pareto = [float(_metric_value(row, x_metric) or 0.0) for row in pareto_rows]
         y_pareto = [float(_metric_value(row, y_metric) or 0.0) for row in pareto_rows]
 
-        out_path = csv_path.with_name(_pair_plot_filename(x_metric, y_metric))
+        prefix = f"{output_prefix}_" if output_prefix else ""
+        out_path = csv_path.with_name(f"{prefix}{_pair_plot_filename(x_metric, y_metric)}")
         fig, ax = plt.subplots(figsize=(9, 6), dpi=180)
 
         scatter = ax.scatter(
@@ -471,6 +475,12 @@ def main() -> None:
         help="Write pair plots with utilization-colored points and pairwise Pareto fronts.",
     )
     parser.add_argument(
+        "--output-prefix",
+        type=str,
+        default="",
+        help="Optional prefix for all output filenames to avoid overwriting (e.g. 'timeloop_ws_medium').",
+    )
+    parser.add_argument(
         "--workload-label",
         type=str,
         default=None,
@@ -500,12 +510,13 @@ def main() -> None:
 
     pareto = _pareto_front(ok, pareto_metrics)
 
+    prefix = f"{args.output_prefix}_" if args.output_prefix else ""
     if args.pareto_out is not None:
         pareto_out = args.pareto_out
     elif pareto_metrics == ("latency", args.metric):
-        pareto_out = args.csv.with_name("pareto_latency_vs_" + args.metric + ".csv")
+        pareto_out = args.csv.with_name(f"{prefix}pareto_latency_vs_{args.metric}.csv")
     else:
-        pareto_out = args.csv.with_name("pareto_" + "_".join(pareto_metrics) + ".csv")
+        pareto_out = args.csv.with_name(f"{prefix}pareto_{'_'.join(pareto_metrics)}.csv")
 
     for row in pareto:
         util = _utilization_percent(row)
@@ -528,6 +539,7 @@ def main() -> None:
             csv_path=args.csv,
             workload_label=args.workload_label,
             tool_label=args.tool_label,
+            output_prefix=args.output_prefix,
         )
         for path in plot_paths:
             print(f"Plot: {path}")
@@ -538,6 +550,7 @@ def main() -> None:
             csv_path=args.csv,
             workload_label=args.workload_label,
             tool_label=args.tool_label,
+            output_prefix=args.output_prefix,
         )
         for path in plot_paths:
             print(f"Plot: {path}")
